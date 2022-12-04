@@ -81,8 +81,7 @@ func GetCommand() *cobra.Command {
 
 func (opt *Options) WebServer() { // 用来启动 web 服务
 	http.HandleFunc("/", Handle) // 设置访问的路由
-	args := ":" + opt.port
-	err := http.ListenAndServe(args, nil) // 设置监听的端口
+	err := http.ListenAndServe("0.0.0.0:" + opt.port, nil) // 设置监听的端口
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}

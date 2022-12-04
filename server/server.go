@@ -1,9 +1,9 @@
 package server
 
-// TODO: 重写server包
-
+//
+// //TODO: 重写server包
+//
 // import (
-// 	"github.com/xmh1011/IssueReport/cmd"
 // 	"github.com/xmh1011/IssueReport/github"
 // 	"html/template"
 // 	"log"
@@ -20,10 +20,6 @@ package server
 //
 // // Handle is the handler for the web server
 // func Handle(w http.ResponseWriter, r *http.Request) {
-// 	result, err := github.SearchIssues() // 调用 SearchIssues 函数
-// 	if err != nil {
-// 		log.Fatal(err) // 如果出错，打印错误信息
-// 	}
 // 	// 定义一个模板，用来展示结果
 // 	// template.Must 是一个辅助函数，用来检查模板是否有错误，如果有错误，会抛出异常。
 // 	// template.New 是一个辅助函数，用来创建一个模板。
