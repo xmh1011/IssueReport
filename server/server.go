@@ -7,6 +7,14 @@ import (
 	"net/http"
 )
 
+func WebServer() { // 用来启动 web 服务
+	http.HandleFunc("/", Handle)             // 设置访问的路由
+	err := http.ListenAndServe(":8080", nil) // 设置监听的端口
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
+}
+
 // Handle is the handler for the web server
 func Handle(w http.ResponseWriter, r *http.Request) {
 	keywords := []string{"goland", "java"}       // 定义一个字符串切片

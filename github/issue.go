@@ -3,11 +3,10 @@ package github
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 )
 
-func main() {
+func IssueReport(result *IssuesSearchResult, err error) {
 	
 	// now 为现在的时间，yearAgo 为距现在一年的时间，monthAgo 为距现在一月的时间。
 	now := time.Now()
@@ -19,7 +18,6 @@ func main() {
 	monthAgos := make([]*Issue, 0)
 	lessMonths := make([]*Issue, 0)
 	
-	result, err := SearchIssues(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)
 	}

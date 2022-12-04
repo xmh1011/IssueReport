@@ -4,20 +4,23 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/xmh1011/IssueReport/github"
+	"github.com/xmh1011/IssueReport/server"
 	"io"
 	"log"
 	"os"
 )
 
 type Options struct {
-	Stderr io.Writer
-	Stdout io.Writer
+	Stderr io.Writer // Stderr is the writer to write warnings and errors to.
+	Stdout io.Writer // Stdout is the writer to write normal output to.
 	
-	repo   string
-	status string
-	key    string
+	repo   string // Specify the repository
+	status string // Specify the status of issue
+	key    string // Specify the key of issue
+	web    bool   // Specify whether to open the web server
 }
 
+// NewOptions returns an Options struct with default values set.
 func NewOptions() *Options {
 	return &Options{
 		Stderr: os.Stderr,
@@ -27,15 +30,17 @@ func NewOptions() *Options {
 
 var opt = NewOptions()
 
+// GetCommand returns the cobra command for issue
 func GetCommand() *cobra.Command {
-	c := &cobra.Command{
-		Use:   "issue",
+	// Main command
+	c := &cobra.Command{ // c is the main command
+		Use:   "issue", // The name of the command
 		Short: "Create a new issue on GitHub",
 		Run: func(cmd *cobra.Command, args []string) {
 			commands := make([]string, 0)
-			if opt.repo != "" {
+			if opt.repo != "" { // If the repo is not empty, add the repo to the commands
 				commands = append(commands, opt.repo)
-			} else {
+			} else { // If the repo is empty, print the error message
 				fmt.Printf("The repo name should be specified!\n")
 			}
 			if opt.status != "" {
@@ -48,13 +53,14 @@ func GetCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("%d issues:\n", result.TotalCount)
-			for _, item := range result.Items {
-				fmt.Printf("#%-5d %9.9s %s\n", item.Number, item.User.Login, item.Title)
+			if opt.web {
+				server.WebServer()
 			}
+			github.IssueReport(result, err)
 		},
 	}
-	c.Flags().StringVarP(&opt.repo, "repo", "r", "", "Specify the repository")
+	// Add flags
+	c.Flags().StringVarP(&opt.repo, "repo", "r", "", "Specify the repository") // Add the flag of repo
 	c.Flags().StringVarP(&opt.status, "status", "s", "is:open", "Specify the status")
 	c.Flags().StringVarP(&opt.key, "key", "k", "", "Specify the key")
 	return c
