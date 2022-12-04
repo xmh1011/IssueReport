@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/xmh1011/IssueReport/github"
-	"html/template"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 // TODO: 改用接口
@@ -26,6 +26,7 @@ type Options struct {
 	status string // Specify the status of issue
 	key    string // Specify the key of issue
 	web    bool   // Specify whether to open the web server
+	port   string // Specify the port of web server
 }
 
 // NewOptions returns an Options struct with default values set.
@@ -63,7 +64,7 @@ func GetCommand() *cobra.Command {
 			}
 			if opt.web { // If the web is true, open the web server
 				Commands = commands
-				WebServer()
+				opt.WebServer()
 			} else { // If the web is false, print the result to the stdout
 				github.IssueReport(result, err)
 			}
@@ -74,12 +75,14 @@ func GetCommand() *cobra.Command {
 	c.Flags().StringVarP(&opt.status, "status", "s", "is:open", "Specify the status")
 	c.Flags().StringVarP(&opt.key, "key", "k", "", "Specify the key")
 	c.Flags().BoolVarP(&opt.web, "web", "w", false, "Whether to open a web server (default: false)")
+	c.Flags().StringVarP(&opt.port, "port", "p", "8000", "Specify the port of web server")
 	return c
 }
 
-func WebServer() { // 用来启动 web 服务
-	http.HandleFunc("/", Handle)             // 设置访问的路由
-	err := http.ListenAndServe(":8000", nil) // 设置监听的端口
+func (opt *Options) WebServer() { // 用来启动 web 服务
+	http.HandleFunc("/", Handle) // 设置访问的路由
+	args := ":" + opt.port
+	err := http.ListenAndServe(args, nil) // 设置监听的端口
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
@@ -88,30 +91,48 @@ func WebServer() { // 用来启动 web 服务
 // Handle is the handler for the web server
 func Handle(w http.ResponseWriter, r *http.Request) {
 	result, err := github.SearchIssues(Commands) // 调用 SearchIssues 函数
+	// now 为现在的时间，yearAgo 为距现在一年的时间，monthAgo 为距现在一月的时间。
+	now := time.Now()
+	yearAgo := now.AddDate(-1, 0, 0)
+	monthAgo := now.AddDate(0, -1, 0)
+
+	// 三个切片，用来存储 不足一个月的问题，不足一年的问题，超过一年的问题。
+	yearAgos := make([]*github.Issue, 0)
+	monthAgos := make([]*github.Issue, 0)
+	lessMonths := make([]*github.Issue, 0)
+
 	if err != nil {
-		log.Fatal(err) // 如果出错，打印错误信息
+		log.Fatal(err)
 	}
-	// 定义一个模板，用来展示结果
-	// template.Must 是一个辅助函数，用来检查模板是否有错误，如果有错误，会抛出异常。
-	// template.New 是一个辅助函数，用来创建一个模板。
-	var issueList = template.Must(template.New("issuelist").Parse(`
-<h1>{{.TotalCount}} issues</h1>
-<table>
-<tr style='text-align: left'>
-  <th>#</th>
-  <th>State</th>
-  <th>User</th>
-  <th>Title</th>
-</tr>
-{{range .Items}}
-<tr>
-  <td><a href='{{.HTMLURL}}'>{{.Number}}</a></td>
-  <td>{{.State}}</td>
-  <td><a href='{{.User.HTMLURL}}'>{{.User.Login}}</a></td>
-  <td><a href='{{.HTMLURL}}'>{{.Title}}</a></td>
-</tr>
-{{end}}
-</table>
-`))
-	issueList.Execute(w, result) // 执行模板
+
+	fmt.Fprintf(w, "%d issues:\n", result.TotalCount)
+	for _, item := range result.Items {
+		// 如果 yearAgo 比 创建时间晚，说明超过一年
+		if yearAgo.After(item.CreatedAt) {
+			yearAgos = append(yearAgos, item)
+			// 如果 monthAgo 比 创建时间晚，说明超过一月 不足一年
+		} else if monthAgo.After(item.CreatedAt) {
+			monthAgos = append(monthAgos, item)
+			// 如果 monthAgo 比 创建时间早，说明不足一月。
+		} else if monthAgo.Before(item.CreatedAt) {
+			lessMonths = append(lessMonths, item)
+		}
+	}
+
+	fmt.Fprintf(w, "\n一年前\n")
+	for _, item := range yearAgos {
+		fmt.Fprintf(w, "#%-5d %9.9s %.55s %v\n", item.Number, item.User.Login, item.Title, item.CreatedAt)
+	}
+
+	fmt.Fprintf(w, "\n一月前\n")
+	for _, item := range monthAgos {
+		fmt.Fprintf(w, "#%-5d %9.9s %.55s %v\n",
+			item.Number, item.User.Login, item.Title, item.CreatedAt)
+	}
+
+	fmt.Fprintf(w, "\n不足一月\n")
+	for _, item := range lessMonths {
+		fmt.Fprintf(w, "#%-5d %9.9s %.55s %-40v\n",
+			item.Number, item.User.Login, item.Title, item.CreatedAt)
+	}
 }
