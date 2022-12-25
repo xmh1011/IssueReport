@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// TODO: 改用接口
+// Server TODO: 改用接口
 type Server interface {
 	WebServer()
 }
@@ -47,7 +47,7 @@ func GetCommand() *cobra.Command {
 		Short: "Search the github issue", // The short description of the command
 		Run: func(cmd *cobra.Command, args []string) {
 			commands := make([]string, 0)
-			if opt.repo != "" { // If the repo is not empty, add the repo to the commands
+			if opt.repo != "" { // If the repo is not empty, add the repo to the commands.
 				commands = append(commands, opt.repo)
 			} else { // If the repo is empty, print the error message
 				fmt.Printf("The repo name should be specified!\n")
@@ -65,7 +65,7 @@ func GetCommand() *cobra.Command {
 			if opt.web { // If the web is true, open the web server
 				Commands = commands
 				opt.WebServer()
-			} else { // If the web is false, print the result to the stdout
+			} else { // If the web is false, print the result to the stdout.
 				github.IssueReport(result, err)
 			}
 		},
@@ -80,8 +80,8 @@ func GetCommand() *cobra.Command {
 }
 
 func (opt *Options) WebServer() { // 用来启动 web 服务
-	http.HandleFunc("/", Handle) // 设置访问的路由
-	err := http.ListenAndServe("0.0.0.0:" + opt.port, nil) // 设置监听的端口
+	http.HandleFunc("/", Handle)                         // 设置访问的路由
+	err := http.ListenAndServe("0.0.0.0:"+opt.port, nil) // 设置监听的端口
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
